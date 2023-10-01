@@ -6,19 +6,114 @@
     <link rel="stylesheet" href="./css/styles.css" />
     <title>helpMeOut</title>
   </head>
-  <body>
-    <div class="content">
-      <h2>TAKE VIDEO</h2>
+  <body id="popup">
+    <header>
+      <section>
+        <div class="logo">
+          <img src="./images/inside-popup-logo.svg" alt="logo" />
+          <strong>HelpMeOut</strong>
+        </div>
+        <div class="settings">
+          <img src="./images/setting-2.svg" alt="settings icon" />
+          <img src="./images/close-circle.svg" alt="close circle" />
+        </div>
+      </section>
+      <!-- description -->
+      <p>This extension helps you record and share help videos with ease.</p>
+    </header>
+    <main>
+      <!-- select screen to record buttons -->
+      <section class="screen">
+        <button id="full-screen-button">
+          <img src="./images/monitor.svg" alt="monitor" />
+          <span>Full Screen</span>
+        </button>
+        <button id="current-tab-button">
+          <img src="./images/current-tab.svg" alt="current tab icon" />
+          <span>Current Tab</span>
+        </button>
+      </section>
+      <!-- camera and audio toggle -->
+      <section class="toggles">
+        <!-- camera -->
+        <div class="toggle">
+          <div>
+            <img src="./images/video-camera.svg" alt="" />
+            <strong>Camera</strong>
+          </div>
+          <!-- camera switch -->
+          <button class="switch-btn" id="camera-switch">
+            <span></span>
+            <span></span>
+            <span class="switch"></span>
+          </button>
+        </div>
+        <!-- audio -->
+        <div class="toggle">
+          <div>
+            <img src="./images/microphone.svg" alt="" />
+            <strong>Audio</strong>
+          </div>
+          <!-- audio switch -->
+          <button class="switch-btn">
+            <span></span>
+            <span></span>
+            <span class="switch"></span>
+          </button>
+        </div>
+      </section>
+      <!-- start recording button -->
+      <button id="start-recording-button">Start Recording</button>
+    </main>
 
-      <div class="button_cont">
-        <button id="start_video">START VIDEO</button>
-      </div>
-      <br />
-      <div class="button_cont">
-        <button id="stop_video">STOP VIDEO</button>
-      </div>
-    </div>
+    <!-- RECORDER CONTROLS -->
+    <!-- <div class="recorder_box">
+      <aside class="recorder_container">
+        <div class="recorder">
+          <div class="timer_box">
+            <strong class="timer">00:03:45</strong>
+            <div class="sign"></div>
+          </div>
 
+          <div class="divider"></div>
+
+          <button class="control">
+            <div id="pause">
+              <img src="./images/Line 23.svg" alt="line" />
+              <img src="./images/Line 23.svg" alt="line" />
+            </div>
+            <strong>Pause</strong>
+          </button>
+
+          <button class="control">
+            <div>
+              <img src="./images/stop.svg" alt="stop" />
+            </div>
+            <strong>Stop</strong>
+          </button>
+
+          <button class="control">
+            <div>
+              <img src="./images/video-camera.svg" alt="camera" />
+            </div>
+            <strong>Camera</strong>
+          </button>
+
+          <button class="control">
+            <div>
+              <img src="./images/microphone.svg" alt="microphone" />
+            </div>
+            <strong>Mic</strong>
+          </button>
+
+          <button class="control delete">
+            <div>
+              <img src="./images/delete_icon.svg" alt="delete" />
+            </div>
+          </button>
+        </div>
+      </aside>
+    </div> -->
     <script src="./js/popup.js"></script>
   </body>
 </html>
