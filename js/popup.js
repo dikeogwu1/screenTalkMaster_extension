@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const controlsBox = document.querySelector(".recorder_box");
 
   // adding event listeners
+  let camera = true;
+  let audio = true;
 
   btns.forEach((btn) => {
     btn.addEventListener("click", function () {
@@ -19,36 +21,42 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  startVideoButton.addEventListener("click", () => {
-    // sendMessage
+  function sendMsg(msg) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(
-        tabs[0].id,
-        { action: "request_recording" },
-        function (response) {
-          if (!chrome.runtime.lastError) {
-            console.log(response);
-          } else {
-            console.log(chrome.runtime.lastError, "error line 14");
-          }
+      chrome.tabs.sendMessage(tabs[0].id, { action: msg }, function (response) {
+        if (!chrome.runtime.lastError) {
+          console.log(response);
+        } else {
+          console.log(chrome.runtime.lastError);
         }
-      );
+      });
     });
+  }
+
+  btns[0].addEventListener("click", () => {
+    if (!camera) {
+      camera = true;
+    } else {
+      camera = false;
+    }
   });
 
-  stopVideoButton.addEventListener("click", () => {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(
-        tabs[0].id,
-        { action: "stopvideo" },
-        function (response) {
-          if (!chrome.runtime.lastError) {
-            console.log(response);
-          } else {
-            console.log(chrome.runtime.lastError, "error line 27");
-          }
-        }
-      );
-    });
+  btns[1].addEventListener("click", () => {
+    if (!audio) {
+      audio = true;
+    } else {
+      audio = false;
+    }
   });
+
+  startVideoButton.addEventListener("click", () => {
+    if (!camera && !audio) {
+      sendMsg("share_only_screen");
+    } else if (!camera && audio) {
+      sendMsg("audio_recording");
+    } else {
+      sendMsg("video_recording");
+    }
+  });
+  // end of DOMContentLoaded
 });

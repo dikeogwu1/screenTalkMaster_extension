@@ -1,13 +1,23 @@
 let recordingTimerInterval;
 let recordingTime = 0;
 let isRecording = false;
-var recorder = null;
+var shareScreen = null;
+var videoRecorder = null;
+var audioRecorder = null;
 
-// Function to create and display recording controls
-function createRecordingControls() {
-  const recordingControls = document.createElement("div");
-  recordingControls.id = "recording-controls";
-  recordingControls.innerHTML = `<aside
+const recordingControls = document.createElement("div");
+recordingControls.id = "recording-controls";
+recordingControls.style.display = "flex";
+recordingControls.style.position = "fixed";
+recordingControls.style.bottom = "60px";
+recordingControls.style.left = "20px";
+recordingControls.style.width = "fit-content";
+document.body.appendChild(recordingControls);
+
+// Function to create and display audio recording controls
+function createAudioRecordingControls() {
+  const firstChild = document.createElement("div");
+  firstChild.innerHTML = `<aside
       class="recorder_container"
       style="
         display: flex;
@@ -18,10 +28,6 @@ function createRecordingControls() {
         border-radius: 12.5rem;
         background: rgba(98, 98, 98, 0.17);
         width: fit-content;
-        position: fixed;
-        bottom: 60px;
-        left: 60px;
-        zIndex: 9999;
       "
     >
       <div
@@ -61,12 +67,10 @@ function createRecordingControls() {
             "
           ></div>
         </div>
-
         <div
           class="divider"
           style="width: 0.0625rem; height: 3rem; background: #e8e8e8"
         ></div>
-
         <button class="control pause" style="background: transparent; border: none">
           <div
             id="pause"
@@ -103,7 +107,6 @@ function createRecordingControls() {
             >Pause</strong
           >
         </button>
-
         <button class="control stop" style="background: transparent; border: none">
           <div
             style="
@@ -134,7 +137,6 @@ function createRecordingControls() {
             >Stop</strong
           >
         </button>
-
         <button class="control" style="background: transparent; border: none">
           <div
             style="
@@ -165,7 +167,6 @@ function createRecordingControls() {
             >Camera</strong
           >
         </button>
-
         <button class="control" style="background: transparent; border: none">
           <div
             style="
@@ -196,7 +197,6 @@ function createRecordingControls() {
             >Mic</strong
           >
         </button>
-
         <button
           class="control delete"
           style="background: transparent; border: none"
@@ -216,22 +216,38 @@ function createRecordingControls() {
             "
           >
             <img
-              src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094902/Icons/delete_icon_hsirly.svg"
-              alt="delete"
+            src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094902/Icons/delete_icon_hsirly.svg"
+            alt="delete"
             />
-          </div>
-        </button>
-      </div>
-    </aside>`;
+            </div>
+            </button>
+            </div>
+            </aside>`;
+  recordingControls.appendChild(firstChild);
 
-  document.body.appendChild(recordingControls);
   const pauseBtn = recordingControls.querySelector(".pause");
   const stopBtn = recordingControls.querySelector(".stop");
   const deletBtn = recordingControls.querySelector(".delete");
-
   pauseBtn.addEventListener("click", pauseRecording);
   stopBtn.addEventListener("click", stopRecording);
   deletBtn.addEventListener("click", stopRecording);
+}
+
+// Function to create and display video recording
+function videoView(stream) {
+  // Create a video element
+  const videoElement = document.createElement("video");
+  videoElement.autoplay = "true";
+  videoElement.playsInline = "true";
+  videoElement.style.display = "block";
+  videoElement.style.width = "120px";
+  videoElement.style.height = "120px";
+  videoElement.style.borderRadius = "50%";
+  videoElement.style.border = "2px solid #141414";
+  videoElement.style.overflow = "hidden";
+  videoElement.style.objectFit = "cover";
+  videoElement.srcObject = stream;
+  recordingControls.appendChild(videoElement);
 }
 
 // Function to update the recording timer
@@ -246,23 +262,23 @@ function updateRecordingTimer() {
   ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-// Function to start recording
-function startRecording() {
-  createRecordingControls();
+// Function to start recording audio
+function startRecordingSelfInAudio() {
+  createAudioRecordingControls();
   recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
 }
 
-// Function to pause recording
+// Function to pause audio recording
 function pauseRecording() {
-  recorder.pause();
+  audioRecorder.pause();
+  videoRecorder.puase();
   clearInterval(recordingTimerInterval);
-  // Remove the recording controls from the screen
-  const recordingControls = document.querySelector("#recording-controls");
-  recordingControls.remove();
 }
-// Function to stop recording
+// Function to stop audio recording
 function stopRecording() {
-  recorder.stop();
+  audioRecorder.stop();
+  videoRecorder.stop();
+  shareScreen.stop();
   recordingTime = 0;
   clearInterval(recordingTimerInterval);
   // Remove the recording controls from the screen
@@ -270,66 +286,187 @@ function stopRecording() {
   recordingControls.remove();
 }
 
-// ***** MAIN *****
+function postVideoLinkToServer(url) {
+  // Define the URL where you want to send the POST request
+  const destination =
+    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVide";
 
-function onAccessApproved(stream) {
-  recorder = new MediaRecorder(stream);
-  recorder.start();
-  startRecording();
+  // Define the data you want to send in the request body as an object
+  const data = {
+    name: "video link",
+    video: url,
+    ip: "44228391",
+  };
 
-  recorder.onpause = function () {
+  fetch(destination, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+      return response.json();
+    })
+    .then((responseData) => {
+      // Handle the response data
+      alert("Your video has been saved successfully");
+    })
+    .catch((error) => {
+      // Handle any errors that occurred during the fetch
+      alert("Your video was not saved");
+    });
+}
+
+// ***** ON SCREEN SHARING ACCESS APPROVED *****
+function onScreanRecordingAccessApproved(stream) {
+  shareScreen = new MediaRecorder(stream);
+  shareScreen.start();
+
+  shareScreen.onstop = function () {
     stream.getTracks().forEach(function (track) {
       if (track.readyState === "live") {
         track.stop();
       }
     });
   };
-  recorder.onstop = function () {
-    stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
-    });
-  };
 
-  recorder.ondataavailable = function (event) {
+  shareScreen.ondataavailable = function (event) {
     let recordedBlob = event.data;
     let url = URL.createObjectURL(recordedBlob);
 
-    let a = document.createElement("a");
-
-    a.style.display = "none";
-    a.href = url;
-    a.download = "screen-recording.webm";
-
-    document.body.appendChild(a);
-    // a.click();
-
-    document.body.removeChild(a);
+    stopRecording();
+    postVideoLinkToServer(url);
 
     URL.revokeObjectURL(url);
   };
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "request_recording") {
-    sendResponse(`processed: ${message.action}`);
+// ***** ON VIDEO RECORDING ACCESS APPROVED *****
+function initializeVideoRecorder(stream) {
+  videoRecorder = new MediaRecorder(stream, {
+    mimeType: "video/webm",
+  });
+  videoRecorder.start();
 
+  videoRecorder.ondataavailable = function (event) {
+    if (event.data.size > 0) {
+      // Handle the recorded data as needed
+      console.log("Data available:", event.data);
+    }
+  };
+
+  videoRecorder.onpause = function () {
+    stream.getTracks().forEach(function (track) {
+      if (track.readyState === "live") {
+        track.stop();
+      }
+    });
+  };
+  videoRecorder.onstop = function () {
+    stream.getTracks().forEach(function (track) {
+      if (track.readyState === "live") {
+        track.stop();
+      }
+    });
+  };
+}
+// ***** ON AUDIO RECORDING ACCESS APPROVED *****
+function initializeAudioRecorder(stream) {
+  audioRecorder = new MediaRecorder(stream);
+  audioRecorder.start();
+
+  audioRecorder.ondataavailable = function (event) {
+    if (event.data.size > 0) {
+      // Handle the recorded data as needed
+      console.log("Data available:", event.data);
+    }
+  };
+
+  audioRecorder.onpause = function () {
+    stream.getTracks().forEach(function (track) {
+      if (track.readyState === "live") {
+        track.stop();
+      }
+    });
+  };
+  audioRecorder.onstop = function () {
+    stream.getTracks().forEach(function (track) {
+      if (track.readyState === "live") {
+        track.stop();
+      }
+    });
+  };
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // media recording
+  if (message.action === "share_only_screen") {
+    sendResponse(`processed: ${message.action}`);
     navigator.mediaDevices
-      .getUserMedia({
+      .getDisplayMedia({
         audio: true,
         video: true,
       })
       .then((stream) => {
-        onAccessApproved(stream);
+        onScreanRecordingAccessApproved(stream);
       });
+
+    return;
+  }
+  if (message.action === "video_recording") {
+    sendResponse(`processed: ${message.action}`);
+    navigator.mediaDevices
+      .getDisplayMedia({
+        audio: true,
+        video: true,
+      })
+      .then((stream) => {
+        onScreanRecordingAccessApproved(stream);
+
+        // start media recording
+        navigator.mediaDevices
+          .getUserMedia({ video: true, audio: true })
+          .then((stream) => {
+            mediaStream = stream;
+            videoView(stream);
+            startRecordingSelfInAudio();
+            initializeAudioRecorder(stream);
+            initializeVideoRecorder(stream);
+          })
+          .catch((error) => {
+            console.error("Error accessing media devices:", error);
+          });
+      });
+
+    return;
   }
 
-  if (message.action === "stopvideo") {
-    console.log("stopping video");
+  if (message.action === "audio_recording") {
     sendResponse(`processed: ${message.action}`);
-    if (!recorder) return console.log("no recorder");
+    navigator.mediaDevices
+      .getDisplayMedia({
+        audio: true,
+        video: true,
+      })
+      .then((stream) => {
+        onScreanRecordingAccessApproved(stream);
 
-    stopRecording();
+        // start media recording
+        navigator.mediaDevices
+          .getUserMedia({ video: false, audio: true })
+          .then((stream) => {
+            mediaStream = stream;
+            startRecordingSelfInAudio();
+            initializeAudioRecorder(stream);
+            initializeVideoRecorder(stream);
+          });
+      })
+      .catch((error) => {
+        console.error("Error accessing media devices:", error);
+      });
   }
 });
