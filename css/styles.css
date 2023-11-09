@@ -173,16 +173,12 @@ header p {
   width: 50%;
   height: 100%;
   top: 0;
-  right: 0;
   background: var(--primary-white);
   border-radius: var(--Inner-Radius);
   margin: 0;
   display: block;
   transition: var(--transition);
   z-index: 2;
-}
-.slide .switch {
-  right: 50%;
 }
 
 /* start recording button */
@@ -196,11 +192,11 @@ header p {
   background: var(--primary-600);
   border-radius: var(--Inner-Radius);
   box-shadow: 0 0 2px 1px var(--primary-200);
-  color: var(--primary-white);
+  color: var(--primary-red);
   font-size: 0.875rem;
   font-weight: 900;
   transition: var(--transition);
 }
 #start-recording-button:hover {
-  color: var(--primary-red);
+  color: var(--primary-white);
 }

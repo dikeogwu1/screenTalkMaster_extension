@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "HelpMeOut",
+  "name": "screenTalkMaster",
   "description": "This extension helps you record and share help videos with ease.",
   "icons": {
     "128": "/images/main-icon-xl.png"
@@ -19,6 +19,6 @@
 
   "host_permissions": ["http://*/", "https://*/*"],
 
-  "permissions": ["scripting", "tabs", "activeTab"],
+  "permissions": ["scripting", "tabs", "activeTab", "notifications"],
   "version": "1.0.0"
 }

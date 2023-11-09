@@ -1,6 +1,7 @@
 let recordingTimerInterval;
 let recordingTime = 0;
-let isRecording = false;
+let isRecording = true;
+let destination;
 var shareScreen = null;
 var videoRecorder = null;
 var audioRecorder = null;
@@ -8,11 +9,40 @@ var audioRecorder = null;
 const recordingControls = document.createElement("div");
 recordingControls.id = "recording-controls";
 recordingControls.style.display = "flex";
+recordingControls.style.alignItems = "center";
 recordingControls.style.position = "fixed";
 recordingControls.style.bottom = "60px";
 recordingControls.style.left = "20px";
 recordingControls.style.width = "fit-content";
+recordingControls.style.zIndex = "999999";
+recordingControls.style.cursor = "move";
 document.body.appendChild(recordingControls);
+
+// DRAG AND DROP FUTURE
+let isDragging = false;
+let initialX, initialY;
+recordingControls.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  initialX = e.clientX - recordingControls.getBoundingClientRect().left;
+  initialY = e.clientY - recordingControls.getBoundingClientRect().top;
+  recordingControls.style.zIndex = 100; // Bring the controls to the front
+  recordingControls.style.cursor = "grabbing"; // Change cursor style
+});
+
+document.addEventListener("mousemove", (e) => {
+  if (!isDragging) return;
+
+  const newX = e.clientX - initialX;
+  const newY = e.clientY - initialY;
+
+  recordingControls.style.left = `${newX}px`;
+  recordingControls.style.top = `${newY}px`;
+});
+
+document.addEventListener("mouseup", () => {
+  isDragging = false;
+  recordingControls.style.cursor = "grab";
+});
 
 // Function to create and display audio recording controls
 function createAudioRecordingControls() {
@@ -51,7 +81,7 @@ function createAudioRecordingControls() {
             style="
               color: #fff;
               font-family: Inter, sans-serif;
-              font-size: 1.25rem;
+              font-size: 14px;
               font-weight: 500;
             "
             >00:00:00</strong
@@ -71,132 +101,154 @@ function createAudioRecordingControls() {
           class="divider"
           style="width: 0.0625rem; height: 3rem; background: #e8e8e8"
         ></div>
-        <button class="control pause" style="background: transparent; border: none">
+        <button class="control pause" style="background: transparent; border: none;">
           <div
             id="pause"
             style="
               display: flex;
               cursor: pointer;
-              gap: 0.5rem;
-              width: 1.5rem;
-              height: 1.5rem;
+              gap: 8px;
+              width: 24px;
+              height: 24px;
               padding: 0.625rem;
-              place-content: center;
+              justify-content: center;
+              align-items: center;
               border-radius: 50%;
               border: 1px solid #fff;
               background: #fff;
-              margin-bottom: 0.5rem;
+              margin-bottom: 8px;
             "
           >
             <img
               src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/Line_23_wvwxjf.svg"
               alt="line"
+              style="
+              width: 3px;
+              height: 10px;"
             />
             <img
               src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/Line_23_wvwxjf.svg"
               alt="line"
+              style="
+              width: 3px;
+              height: 10px;"
             />
           </div>
           <strong
             style="
               color: #fff;
               font-family: Work Sans, sans-serif;
-              font-size: 0.75rem;
+              font-size: 12px;
               font-weight: 500;
             "
             >Pause</strong
           >
         </button>
-        <button class="control stop" style="background: transparent; border: none">
+
+        <button class="control start" style="background: transparent; border: none">
           <div
             style="
               display: grid;
-              width: 1.5rem;
-              height: 1.5rem;
+              width: 24px;
+              height: 24px;
               cursor: pointer;
               padding: 0.625rem;
               place-content: center;
               border-radius: 50%;
               border: 1px solid #fff;
               background: #fff;
-              margin-bottom: 0.5rem;
+              margin-bottom: 8px;
+            "
+          >
+            <img
+              src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/microphone_cthllc.svg"
+              alt="stop"
+              style="
+              width: 20px;
+              height: 20px;"
+            />
+          </div>
+          <strong
+            style="
+              color: #fff;
+              font-family: Work Sans, sans-serif;
+              font-size: 12px;
+              font-weight: 500;
+            "
+            >Resume</strong
+          >
+        </button>
+
+        <button class="control stop" style="background: transparent; border: none">
+          <div
+            style="
+              display: grid;
+              width: 24px;
+              height: 24px;
+              cursor: pointer;
+              padding: 0.625rem;
+              place-content: center;
+              border-radius: 50%;
+              border: 1px solid #fff;
+              background: #fff;
+              margin-bottom: 8px;
             "
           >
             <img
               src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/stop_a43eip.svg"
               alt="stop"
+              style="
+              width: 20px;
+              height: 20px;"
             />
           </div>
           <strong
             style="
               color: #fff;
               font-family: Work Sans, sans-serif;
-              font-size: 0.75rem;
+              font-size: 12px;
               font-weight: 500;
             "
             >Stop</strong
           >
         </button>
+
+        
+
         <button class="control" style="background: transparent; border: none">
           <div
             style="
               display: grid;
-              width: 1.5rem;
-              height: 1.5rem;
+              width: 24px;
+              height: 24px;
               cursor: pointer;
               padding: 0.625rem;
               place-content: center;
               border-radius: 50%;
               border: 1px solid #fff;
               background: #fff;
-              margin-bottom: 0.5rem;
+              margin-bottom: 8px;
             "
           >
             <img
               src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/video-camera_uc4wcw.svg"
               alt="camera"
+              style="
+              width: 20px;
+              height: 20px;"
             />
           </div>
           <strong
             style="
               color: #fff;
               font-family: Work Sans, sans-serif;
-              font-size: 0.75rem;
+              font-size: 12px;
               font-weight: 500;
             "
             >Camera</strong
           >
         </button>
-        <button class="control" style="background: transparent; border: none">
-          <div
-            style="
-              display: grid;
-              width: 1.5rem;
-              height: 1.5rem;
-              cursor: pointer;
-              padding: 0.625rem;
-              place-content: center;
-              border-radius: 50%;
-              border: 1px solid #fff;
-              background: #fff;
-              margin-bottom: 0.5rem;
-            "
-          >
-            <img
-              src="https://res.cloudinary.com/dikeogwu1/image/upload/v1696094899/Icons/microphone_cthllc.svg"
-              alt="microphone"
-            />
-          </div>
-          <strong
-            style="
-              color: #fff;
-              font-family: Work Sans, sans-serif;
-              font-size: 0.75rem;
-              font-weight: 500;
-            "
-            >Mic</strong
-          >
-        </button>
+        
         <button
           class="control delete"
           style="background: transparent; border: none"
@@ -204,15 +256,15 @@ function createAudioRecordingControls() {
           <div
             style="
               display: grid;
-              width: 1.5rem;
-              height: 1.5rem;
+              width: 24px;
+              height: 24px;
               padding: 0.625rem;
               cursor: pointer;
               place-content: center;
               border-radius: 50%;
               border: 1px solid #fff;
               background: #fff;
-              margin-bottom: 1.25rem;
+              margin-bottom: 20px;
             "
           >
             <img
@@ -227,27 +279,20 @@ function createAudioRecordingControls() {
 
   const pauseBtn = recordingControls.querySelector(".pause");
   const stopBtn = recordingControls.querySelector(".stop");
+  const startBtn = recordingControls.querySelector(".start");
   const deletBtn = recordingControls.querySelector(".delete");
   pauseBtn.addEventListener("click", pauseRecording);
   stopBtn.addEventListener("click", stopRecording);
-  deletBtn.addEventListener("click", stopRecording);
-}
+  startBtn.addEventListener("click", resumeRecording);
+  deletBtn.addEventListener("click", deleteRecording);
 
-// Function to create and display video recording
-function videoView(stream) {
-  // Create a video element
-  const videoElement = document.createElement("video");
-  videoElement.autoplay = "true";
-  videoElement.playsInline = "true";
-  videoElement.style.display = "block";
-  videoElement.style.width = "120px";
-  videoElement.style.height = "120px";
-  videoElement.style.borderRadius = "50%";
-  videoElement.style.border = "2px solid #141414";
-  videoElement.style.overflow = "hidden";
-  videoElement.style.objectFit = "cover";
-  videoElement.srcObject = stream;
-  recordingControls.appendChild(videoElement);
+  if (isRecording) {
+    pauseBtn.style.display = "block";
+    startBtn.style.display = "none";
+  } else {
+    pauseBtn.style.display = "none";
+    startBtn.style.display = "block";
+  }
 }
 
 // Function to update the recording timer
@@ -262,35 +307,71 @@ function updateRecordingTimer() {
   ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-// Function to start recording audio
-function startRecordingSelfInAudio() {
-  createAudioRecordingControls();
-  recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
-}
-
 // Function to pause audio recording
 function pauseRecording() {
-  audioRecorder.pause();
-  videoRecorder.puase();
-  clearInterval(recordingTimerInterval);
+  isRecording = false;
+  if (!isRecording) {
+    recordingControls.querySelector(".pause").style.display = "none";
+    recordingControls.querySelector(".start").style.display = "block";
+    audioRecorder && audioRecorder.pause();
+    videoRecorder && videoRecorder.pause();
+    shareScreen && shareScreen.pause();
+    clearInterval(recordingTimerInterval);
+  }
 }
-// Function to stop audio recording
+
+// Function to resume recording
+function resumeRecording() {
+  isRecording = true;
+  if (isRecording) {
+    recordingControls.querySelector(".pause").style.display = "block";
+    recordingControls.querySelector(".start").style.display = "none";
+    audioRecorder && audioRecorder.resume();
+    videoRecorder && videoRecorder.resume();
+    shareScreen && shareScreen.resume();
+    recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+  }
+}
+
+// Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and save recording
 function stopRecording() {
-  audioRecorder.stop();
-  videoRecorder.stop();
-  shareScreen.stop();
-  recordingTime = 0;
+  // Define the URL where you want to send the POST request
+  destination =
+    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo";
+  audioRecorder && audioRecorder.stop();
+  videoRecorder && videoRecorder.stop();
+  shareScreen && shareScreen.stop();
   clearInterval(recordingTimerInterval);
+  recordingTime = 0;
   // Remove the recording controls from the screen
-  const recordingControls = document.querySelector("#recording-controls");
   recordingControls.remove();
+  shareScreen = null;
+  videoRecorder = null;
+  audioRecorder = null;
+  setTimeout(() => {
+    location.reload();
+  }, 3000);
+}
+
+// Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
+function deleteRecording() {
+  destination = "";
+  audioRecorder && audioRecorder.stop();
+  videoRecorder && videoRecorder.stop();
+  shareScreen && shareScreen.stop();
+  clearInterval(recordingTimerInterval);
+  recordingTime = 0;
+  // Remove the recording controls from the screen
+  recordingControls.remove();
+  shareScreen = null;
+  videoRecorder = null;
+  audioRecorder = null;
+  setTimeout(() => {
+    location.reload();
+  }, 3000);
 }
 
 function postVideoLinkToServer(url) {
-  // Define the URL where you want to send the POST request
-  const destination =
-    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVide";
-
   // Define the data you want to send in the request body as an object
   const data = {
     name: "video link",
@@ -314,10 +395,12 @@ function postVideoLinkToServer(url) {
     .then((responseData) => {
       // Handle the response data
       alert("Your video has been saved successfully");
+      stopRecording();
     })
     .catch((error) => {
       // Handle any errors that occurred during the fetch
       alert("Your video was not saved");
+      stopRecording();
     });
 }
 
@@ -326,11 +409,18 @@ function onScreanRecordingAccessApproved(stream) {
   shareScreen = new MediaRecorder(stream);
   shareScreen.start();
 
+  const videoTrack = stream.getVideoTracks()[0];
+
+  shareScreen.onpause = function () {
+    videoTrack.enabled = false;
+  };
+  shareScreen.onresume = function () {
+    videoTrack.enabled = true;
+  };
+
   shareScreen.onstop = function () {
     stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
+      track.stop();
     });
   };
 
@@ -338,7 +428,6 @@ function onScreanRecordingAccessApproved(stream) {
     let recordedBlob = event.data;
     let url = URL.createObjectURL(recordedBlob);
 
-    stopRecording();
     postVideoLinkToServer(url);
 
     URL.revokeObjectURL(url);
@@ -351,122 +440,135 @@ function initializeVideoRecorder(stream) {
     mimeType: "video/webm",
   });
   videoRecorder.start();
-
-  videoRecorder.ondataavailable = function (event) {
-    if (event.data.size > 0) {
-      // Handle the recorded data as needed
-      console.log("Data available:", event.data);
-    }
-  };
+  const videoTrack = stream.getVideoTracks()[0];
 
   videoRecorder.onpause = function () {
-    stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
-    });
+    videoTrack.enabled = false;
   };
+  videoRecorder.onresume = function () {
+    videoTrack.enabled = true;
+  };
+
   videoRecorder.onstop = function () {
     stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
+      track.stop();
     });
   };
 }
+// function to create and display video recording
+function videoView(stream) {
+  const videoElement = document.createElement("video");
+  videoElement.autoplay = "true";
+  videoElement.playsInline = "true";
+  videoElement.style.display = "block";
+  videoElement.style.width = "120px";
+  videoElement.style.height = "120px";
+  videoElement.style.borderRadius = "50%";
+  videoElement.style.border = "2px solid #141414";
+  videoElement.style.overflow = "hidden";
+  videoElement.style.objectFit = "cover";
+  videoElement.srcObject = stream;
+  recordingControls.appendChild(videoElement);
+  initializeVideoRecorder(stream);
+}
+
 // ***** ON AUDIO RECORDING ACCESS APPROVED *****
 function initializeAudioRecorder(stream) {
   audioRecorder = new MediaRecorder(stream);
   audioRecorder.start();
-
-  audioRecorder.ondataavailable = function (event) {
-    if (event.data.size > 0) {
-      // Handle the recorded data as needed
-      console.log("Data available:", event.data);
-    }
-  };
+  const audioTrack = stream.getAudioTracks()[0];
 
   audioRecorder.onpause = function () {
-    stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
-    });
+    audioTrack.enabled = false;
   };
+  audioRecorder.onresume = function () {
+    audioTrack.enabled = true;
+  };
+
   audioRecorder.onstop = function () {
     stream.getTracks().forEach(function (track) {
-      if (track.readyState === "live") {
-        track.stop();
-      }
+      track.stop();
     });
   };
 }
+// function to start recording audio
+function startRecordingSelfInAudio(stream) {
+  createAudioRecordingControls();
+  recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
+  initializeAudioRecorder(stream);
+}
 
+// ====== start recording screen with video or audio or both =====
+const startVideoAndAudio = async (audio, video) => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: video,
+      audio: audio,
+    });
+    video && videoView(stream);
+    audio && startRecordingSelfInAudio(stream);
+  } catch (error) {
+    console.error("Error accessing media devices:", error);
+  }
+};
+
+// start screen sharing
+const startSharing = async (
+  controls,
+  { bothOn, micOff, cameraOff, bothOff }
+) => {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      audio: true,
+      video: true,
+    });
+    onScreanRecordingAccessApproved(stream);
+
+    if (bothOn) {
+      controls(true, true);
+      return;
+    }
+    if (micOff) {
+      controls(false, true);
+      return;
+    }
+    if (cameraOff) {
+      controls(true, false);
+      return;
+    }
+    if (bothOff) {
+      controls(false, false);
+      return;
+    }
+  } catch (error) {
+    console.error("Error accessing media devices:", error);
+  }
+};
+
+// ON MESSAGE
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // media recording
-  if (message.action === "share_only_screen") {
+  // share Screen With Camera And Mic On
+  if (message.action === "shareScreenWithCameraAndMicOn") {
     sendResponse(`processed: ${message.action}`);
-    navigator.mediaDevices
-      .getDisplayMedia({
-        audio: true,
-        video: true,
-      })
-      .then((stream) => {
-        onScreanRecordingAccessApproved(stream);
-      });
-
+    startSharing(startVideoAndAudio, { bothOn: true });
     return;
   }
-  if (message.action === "video_recording") {
+  // share Screen With Mic Off
+  if (message.action === "shareScreenWithMicOff") {
     sendResponse(`processed: ${message.action}`);
-    navigator.mediaDevices
-      .getDisplayMedia({
-        audio: true,
-        video: true,
-      })
-      .then((stream) => {
-        onScreanRecordingAccessApproved(stream);
-
-        // start media recording
-        navigator.mediaDevices
-          .getUserMedia({ video: true, audio: true })
-          .then((stream) => {
-            mediaStream = stream;
-            videoView(stream);
-            startRecordingSelfInAudio();
-            initializeAudioRecorder(stream);
-            initializeVideoRecorder(stream);
-          })
-          .catch((error) => {
-            console.error("Error accessing media devices:", error);
-          });
-      });
-
+    startSharing(startVideoAndAudio, { micOff: true });
     return;
   }
-
-  if (message.action === "audio_recording") {
+  // share Screen With Camera Off
+  if (message.action === "shareScreenWithCameraOff") {
     sendResponse(`processed: ${message.action}`);
-    navigator.mediaDevices
-      .getDisplayMedia({
-        audio: true,
-        video: true,
-      })
-      .then((stream) => {
-        onScreanRecordingAccessApproved(stream);
-
-        // start media recording
-        navigator.mediaDevices
-          .getUserMedia({ video: false, audio: true })
-          .then((stream) => {
-            mediaStream = stream;
-            startRecordingSelfInAudio();
-            initializeAudioRecorder(stream);
-            initializeVideoRecorder(stream);
-          });
-      })
-      .catch((error) => {
-        console.error("Error accessing media devices:", error);
-      });
+    startSharing(startVideoAndAudio, { cameraOff: true });
+    return;
+  }
+  // share Screen With Camera And Mic Off
+  if (message.action === "shareScreenWithCameraAndMicOff") {
+    sendResponse(`processed: ${message.action}`);
+    startSharing(startVideoAndAudio, { bothOff: true });
+    return;
   }
 });

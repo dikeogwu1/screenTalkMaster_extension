@@ -1,26 +1,31 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // GET THE SELECTORS OF THE BUTTONS
+  // GET THE BUTTONS
   const startVideoButton = document.querySelector(
     "button#start-recording-button"
   );
   const stopVideoButton = document.querySelector("button#camera-switch");
   const btns = document.querySelectorAll(".switch-btn");
-  const controlsBox = document.querySelector(".recorder_box");
+  const switcher = document.querySelectorAll(".switch");
 
-  // adding event listeners
-  let camera = true;
-  let audio = true;
+  // store permissions in localStorage
+  const permissions = localStorage.getItem("permissions")
+    ? JSON.parse(localStorage.getItem("permissions"))
+    : [true, true];
+  let camera = permissions[0];
+  let audio = permissions[1];
 
-  btns.forEach((btn) => {
-    btn.addEventListener("click", function () {
-      if (!btn.classList.contains("slide")) {
-        btn.classList.add("slide");
-      } else {
-        btn.classList.remove("slide");
-      }
-    });
-  });
+  if (!camera) {
+    switcher[0].style.right = "50%";
+  } else {
+    switcher[0].style.right = "0";
+  }
+  if (!audio) {
+    switcher[1].style.right = "50%";
+  } else {
+    switcher[1].style.right = "0";
+  }
 
+  // Function to send message to tab
   function sendMsg(msg) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, { action: msg }, function (response) {
@@ -33,29 +38,53 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  btns[0].addEventListener("click", () => {
-    if (!camera) {
-      camera = true;
-    } else {
+  // Switch off camera
+  btns[0].addEventListener("click", (e) => {
+    if (camera) {
       camera = false;
-    }
-  });
-
-  btns[1].addEventListener("click", () => {
-    if (!audio) {
-      audio = true;
+      switcher[0].style.right = "50%";
+      permissions[0] = camera;
+      localStorage.setItem("permissions", JSON.stringify(permissions));
     } else {
-      audio = false;
+      camera = true;
+      switcher[0].style.right = "0";
+      permissions[0] = camera;
+      localStorage.setItem("permissions", JSON.stringify(permissions));
     }
   });
 
+  // Switch off audio
+  btns[1].addEventListener("click", (e) => {
+    if (audio) {
+      audio = false;
+      switcher[1].style.right = "50%";
+      permissions[1] = audio;
+      localStorage.setItem("permissions", JSON.stringify(permissions));
+    } else {
+      audio = true;
+      switcher[1].style.right = "0";
+      permissions[1] = audio;
+      localStorage.setItem("permissions", JSON.stringify(permissions));
+    }
+  });
+
+  // Send message to start recording
   startVideoButton.addEventListener("click", () => {
     if (!camera && !audio) {
-      sendMsg("share_only_screen");
-    } else if (!camera && audio) {
-      sendMsg("audio_recording");
-    } else {
-      sendMsg("video_recording");
+      alert("You're about to record without camera and Mic");
+      sendMsg("shareScreenWithCameraAndMicOff");
+      return;
+    }
+    if (!camera && audio) {
+      sendMsg("shareScreenWithCameraOff");
+      return;
+    }
+    if (camera && !audio) {
+      sendMsg("shareScreenWithMicOff");
+      return;
+    }
+    if (camera && audio) {
+      sendMsg("shareScreenWithCameraAndMicOn");
     }
   });
   // end of DOMContentLoaded
