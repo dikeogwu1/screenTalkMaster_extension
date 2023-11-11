@@ -29,6 +29,7 @@ recordingControls.addEventListener("mousedown", (e) => {
   recordingControls.style.cursor = "grabbing"; // Change cursor style
 });
 
+// add mousemove event listener
 document.addEventListener("mousemove", (e) => {
   if (!isDragging) return;
 
@@ -39,6 +40,7 @@ document.addEventListener("mousemove", (e) => {
   recordingControls.style.top = `${newY}px`;
 });
 
+// add mouseup event listener
 document.addEventListener("mouseup", () => {
   isDragging = false;
   recordingControls.style.cursor = "grab";
@@ -372,11 +374,35 @@ function deleteRecording() {
 }
 
 function postVideoLinkToServer(url) {
-  // Define the data you want to send in the request body as an object
+  function generateMachineId() {
+    const nav = window.navigator;
+    const machineId = [nav.userAgent, nav.language].join("|");
+    // Hash the generated string to get a more compact and consistent identifier
+    const hashedMachineId = hashString(machineId);
+    return hashedMachineId;
+  }
+
+  // Simple hash function for id generating purposes
+  function hashString(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+    }
+    return hash.toString(16);
+  }
+  const machineId = generateMachineId();
+
+  // Open a new tab and navigate to a URL
+  function openNewTab(url) {
+    window.open(url, "_blank");
+  }
+
+  // data to be posted to the server
   const data = {
     name: "video link",
     video: url,
-    ip: "44228391",
+    ip: machineId,
   };
 
   fetch(destination, {
@@ -394,12 +420,13 @@ function postVideoLinkToServer(url) {
     })
     .then((responseData) => {
       // Handle the response data
-      alert("Your video has been saved successfully");
+      alert("Your video has been generated successfully");
+      openNewTab("https://screentalkmaster.netlify.app/ready");
       stopRecording();
     })
     .catch((error) => {
       // Handle any errors that occurred during the fetch
-      alert("Your video was not saved");
+      alert("Your video was not generated");
       stopRecording();
     });
 }
