@@ -350,9 +350,13 @@ function stopRecording() {
   shareScreen = null;
   videoRecorder = null;
   audioRecorder = null;
-  setTimeout(() => {
-    location.reload();
-  }, 3000);
+  chrome.runtime.sendMessage({
+    type: "stop-recording",
+    target: "offscreen",
+  });
+  // setTimeout(() => {
+  //   location.reload();
+  // }, 3000);
 }
 
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
@@ -483,7 +487,7 @@ function initializeVideoRecorder(stream) {
   };
 }
 // function to create and display video recording
-function videoView(stream) {
+function displayCamRecorder(stream) {
   const videoElement = document.createElement("video");
   videoElement.autoplay = "true";
   videoElement.playsInline = "true";
@@ -519,7 +523,7 @@ function initializeAudioRecorder(stream) {
   };
 }
 // function to start recording audio
-function startRecordingSelfInAudio(stream) {
+function displayControls(stream) {
   createAudioRecordingControls();
   recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
   initializeAudioRecorder(stream);
@@ -532,41 +536,12 @@ const startVideoAndAudio = async (audio, video) => {
       video: video,
       audio: audio,
     });
-    video && videoView(stream);
-    audio && startRecordingSelfInAudio(stream);
-  } catch (error) {
-    console.error("Error accessing media devices:", error);
-  }
-};
-
-// start screen sharing
-const startSharing = async (
-  controls,
-  { bothOn, micOff, cameraOff, bothOff }
-) => {
-  try {
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      audio: true,
-      video: true,
+    video && displayCamRecorder(stream);
+    audio && displayControls(stream);
+    chrome.runtime.sendMessage({
+      type: "start-recording",
+      target: "background",
     });
-    onScreanRecordingAccessApproved(stream);
-
-    if (bothOn) {
-      controls(true, true);
-      return;
-    }
-    if (micOff) {
-      controls(false, true);
-      return;
-    }
-    if (cameraOff) {
-      controls(true, false);
-      return;
-    }
-    if (bothOff) {
-      controls(false, false);
-      return;
-    }
   } catch (error) {
     console.error("Error accessing media devices:", error);
   }
@@ -577,25 +552,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // share Screen With Camera And Mic On
   if (message.action === "shareScreenWithCameraAndMicOn") {
     sendResponse(`processed: ${message.action}`);
-    startSharing(startVideoAndAudio, { bothOn: true });
+    startVideoAndAudio(true, true);
     return;
   }
   // share Screen With Mic Off
   if (message.action === "shareScreenWithMicOff") {
     sendResponse(`processed: ${message.action}`);
-    startSharing(startVideoAndAudio, { micOff: true });
+    startVideoAndAudio(false, true);
     return;
   }
   // share Screen With Camera Off
   if (message.action === "shareScreenWithCameraOff") {
     sendResponse(`processed: ${message.action}`);
-    startSharing(startVideoAndAudio, { cameraOff: true });
+    startVideoAndAudio(true, false);
     return;
   }
   // share Screen With Camera And Mic Off
   if (message.action === "shareScreenWithCameraAndMicOff") {
     sendResponse(`processed: ${message.action}`);
-    startSharing(startVideoAndAudio, { bothOff: true });
+    startVideoAndAudio(true, false);
+
     return;
   }
 });

@@ -19,6 +19,6 @@
 
   "host_permissions": ["http://*/", "https://*/*"],
 
-  "permissions": ["scripting", "tabs", "activeTab", "notifications"],
+  "permissions": ["scripting", "tabs", "activeTab", "tabCapture", "offscreen"],
   "version": "1.0.0"
 }
