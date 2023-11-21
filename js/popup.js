@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let data = [];
 
   // Function to send message to tab
-  function sendMsg(msg, data) {
+  function sendMsg(msg) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, { action: msg }, function (response) {
         if (!chrome.runtime.lastError) {
@@ -48,11 +48,13 @@ document.addEventListener("DOMContentLoaded", () => {
       switcher[0].style.right = "50%";
       permissions[0] = camera;
       localStorage.setItem("permissions", JSON.stringify(permissions));
+      sendMsg("offCamera");
     } else {
       camera = true;
       switcher[0].style.right = "0";
       permissions[0] = camera;
       localStorage.setItem("permissions", JSON.stringify(permissions));
+      sendMsg("onCamera");
     }
   });
 
@@ -63,82 +65,33 @@ document.addEventListener("DOMContentLoaded", () => {
       switcher[1].style.right = "50%";
       permissions[1] = audio;
       localStorage.setItem("permissions", JSON.stringify(permissions));
+      sendMsg("offAudio");
     } else {
       audio = true;
       switcher[1].style.right = "0";
       permissions[1] = audio;
       localStorage.setItem("permissions", JSON.stringify(permissions));
+      sendMsg("onAudio");
     }
   });
 
-  async function startRecording() {
-    if (recorder?.state === "recording") {
-      throw new Error("Called startRecording while recording is in progress.");
-    }
-
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    const activeTabId = tabs[0].id;
-
-    // Get a MediaStream for the active tab.
-    const streamId = await chrome.tabCapture.getMediaStreamId({
-      targetTabId: activeTabId,
-    });
-
-    const media = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        mandatory: {
-          chromeMediaSource: "tab",
-          chromeMediaSourceId: streamId,
-        },
-      },
-      video: {
-        mandatory: {
-          chromeMediaSource: "tab",
-          chromeMediaSourceId: streamId,
-        },
-      },
-    });
-
-    // Continue to play the captured audio to the user.
-    const output = new AudioContext();
-    const source = output.createMediaStreamSource(media);
-    source.connect(output.destination);
-
-    // Start recording.
-    recorder = new MediaRecorder(media, { mimeType: "video/webm" });
-    recorder.ondataavailable = (event) => data.push(event.data);
-    recorder.onstop = () => {
-      const blob = new Blob(data, { type: "video/webm" });
-      window.open(URL.createObjectURL(blob), "_blank");
-
-      // Clear state ready for next recording
-      recorder = undefined;
-      data = [];
-    };
-    recorder.start();
-
-    window.location.hash = "recording";
-  }
-
   // Send message to start recording
   startVideoButton.addEventListener("click", () => {
-    // startRecording();
-
     if (!camera && !audio) {
       alert("You're about to record without camera and Mic");
-      sendMsg("shareScreenWithCameraAndMicOff");
+      sendMsg("cameraAndMicOff");
       return;
     }
     if (!camera && audio) {
-      sendMsg("shareScreenWithCameraOff");
+      sendMsg("cameraOff");
       return;
     }
     if (camera && !audio) {
-      sendMsg("shareScreenWithMicOff");
+      sendMsg("micOff");
       return;
     }
     if (camera && audio) {
-      sendMsg("shareScreenWithCameraAndMicOn");
+      sendMsg("cameraAndMicOn");
     }
   });
   // end of DOMContentLoaded

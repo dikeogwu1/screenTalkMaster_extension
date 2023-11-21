@@ -3,10 +3,18 @@ chrome.runtime.onMessage.addListener(async (message) => {
     switch (message.type) {
       case "start-recording":
         startRecording(message.data);
-        console.log("recieved in offscreen");
         break;
       case "stop-recording":
         stopRecording();
+        break;
+      case "pause-recording":
+        pauseRecording();
+        break;
+      case "resume-recording":
+        resumeRecording();
+        break;
+      case "delete-recording":
+        deleteRecording();
         break;
       default:
         throw new Error("Unrecognized message:", message.type);
@@ -15,6 +23,7 @@ chrome.runtime.onMessage.addListener(async (message) => {
 });
 
 let recorder;
+let deleted;
 let data = [];
 
 async function startRecording(streamId) {
@@ -44,11 +53,29 @@ async function startRecording(streamId) {
 
   // Start recording.
   recorder = new MediaRecorder(media, { mimeType: "video/webm" });
+
+  // Pause recording
+  recorder.onpause = () => {
+    videoTrack.enabled = false;
+  };
+
+  // Resume recording
+  recorder.onresume = () => {
+    videoTrack.enabled = true;
+  };
+
+  // When data is ready
   recorder.ondataavailable = (event) => data.push(event.data);
+
+  // Stop recording
   recorder.onstop = () => {
+    if (deleted) {
+      recorder = undefined;
+      data = [];
+      return;
+    }
     const blob = new Blob(data, { type: "video/webm" });
     window.open(URL.createObjectURL(blob), "_blank");
-
     // Clear state ready for next recording
     recorder = undefined;
     data = [];
@@ -67,7 +94,6 @@ async function startRecording(streamId) {
 async function stopRecording() {
   recorder.stop();
 
-  // Stopping the tracks makes sure the recording icon in the tab is removed.
   recorder.stream.getTracks().forEach((t) => t.stop());
 
   // Update current state in URL
@@ -78,4 +104,34 @@ async function stopRecording() {
   // to avoid keeping a document around unnecessarily. Here we avoid that to
   // make sure the browser keeps the Object URL we create (see above) and to
   // keep the sample fairly simple to follow.
+}
+
+async function stopRecording() {
+  recorder.stop();
+
+  recorder.stream.getTracks().forEach((t) => t.stop());
+  // Update current state in URL
+  window.location.hash = "";
+
+  // Note: In a real extension, you would want to write the recording to a more
+  // permanent location (e.g IndexedDB) and then close the offscreen document,
+  // to avoid keeping a document around unnecessarily. Here we avoid that to
+  // make sure the browser keeps the Object URL we create (see above) and to
+  // keep the sample fairly simple to follow.
+}
+
+async function pauseRecording() {
+  recorder.pause();
+}
+
+async function resumeRecording() {
+  recorder.resume();
+}
+
+async function deleteRecording() {
+  deleted = true;
+  recorder.stop();
+  recorder.stream.getTracks().forEach((t) => t.stop());
+  // Update current state in URL
+  window.location.hash = "";
 }

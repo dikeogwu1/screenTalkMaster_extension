@@ -1,10 +1,11 @@
 let recordingTimerInterval;
 let recordingTime = 0;
-let isRecording = true;
+let isRecording = false;
 let destination;
-var shareScreen = null;
 var videoRecorder = null;
 var audioRecorder = null;
+let camera = null;
+let audio = null;
 
 const recordingControls = document.createElement("div");
 recordingControls.id = "recording-controls";
@@ -48,8 +49,8 @@ document.addEventListener("mouseup", () => {
 
 // Function to create and display audio recording controls
 function createAudioRecordingControls() {
-  const firstChild = document.createElement("div");
-  firstChild.innerHTML = `<aside
+  audio = document.createElement("div");
+  audio.innerHTML = `<aside
       class="recorder_container"
       style="
         display: flex;
@@ -277,8 +278,7 @@ function createAudioRecordingControls() {
             </button>
             </div>
             </aside>`;
-  recordingControls.appendChild(firstChild);
-
+  recordingControls.appendChild(audio);
   const pauseBtn = recordingControls.querySelector(".pause");
   const stopBtn = recordingControls.querySelector(".stop");
   const startBtn = recordingControls.querySelector(".start");
@@ -317,7 +317,10 @@ function pauseRecording() {
     recordingControls.querySelector(".start").style.display = "block";
     audioRecorder && audioRecorder.pause();
     videoRecorder && videoRecorder.pause();
-    shareScreen && shareScreen.pause();
+    chrome.runtime.sendMessage({
+      type: "pause-recording",
+      target: "offscreen",
+    });
     clearInterval(recordingTimerInterval);
   }
 }
@@ -330,7 +333,10 @@ function resumeRecording() {
     recordingControls.querySelector(".start").style.display = "none";
     audioRecorder && audioRecorder.resume();
     videoRecorder && videoRecorder.resume();
-    shareScreen && shareScreen.resume();
+    chrome.runtime.sendMessage({
+      type: "resume-recording",
+      target: "offscreen",
+    });
     recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
   }
 }
@@ -342,21 +348,20 @@ function stopRecording() {
     "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo";
   audioRecorder && audioRecorder.stop();
   videoRecorder && videoRecorder.stop();
-  shareScreen && shareScreen.stop();
   clearInterval(recordingTimerInterval);
   recordingTime = 0;
   // Remove the recording controls from the screen
   recordingControls.remove();
-  shareScreen = null;
   videoRecorder = null;
   audioRecorder = null;
+  isRecording = false;
   chrome.runtime.sendMessage({
     type: "stop-recording",
     target: "offscreen",
   });
-  // setTimeout(() => {
-  //   location.reload();
-  // }, 3000);
+  setTimeout(() => {
+    location.reload();
+  }, 3000);
 }
 
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
@@ -364,14 +369,17 @@ function deleteRecording() {
   destination = "";
   audioRecorder && audioRecorder.stop();
   videoRecorder && videoRecorder.stop();
-  shareScreen && shareScreen.stop();
   clearInterval(recordingTimerInterval);
   recordingTime = 0;
   // Remove the recording controls from the screen
   recordingControls.remove();
-  shareScreen = null;
   videoRecorder = null;
   audioRecorder = null;
+  isRecording = false;
+  chrome.runtime.sendMessage({
+    type: "delete-recording",
+    target: "offscreen",
+  });
   setTimeout(() => {
     location.reload();
   }, 3000);
@@ -435,36 +443,6 @@ function postVideoLinkToServer(url) {
     });
 }
 
-// ***** ON SCREEN SHARING ACCESS APPROVED *****
-function onScreanRecordingAccessApproved(stream) {
-  shareScreen = new MediaRecorder(stream);
-  shareScreen.start();
-
-  const videoTrack = stream.getVideoTracks()[0];
-
-  shareScreen.onpause = function () {
-    videoTrack.enabled = false;
-  };
-  shareScreen.onresume = function () {
-    videoTrack.enabled = true;
-  };
-
-  shareScreen.onstop = function () {
-    stream.getTracks().forEach(function (track) {
-      track.stop();
-    });
-  };
-
-  shareScreen.ondataavailable = function (event) {
-    let recordedBlob = event.data;
-    let url = URL.createObjectURL(recordedBlob);
-
-    postVideoLinkToServer(url);
-
-    URL.revokeObjectURL(url);
-  };
-}
-
 // ***** ON VIDEO RECORDING ACCESS APPROVED *****
 function initializeVideoRecorder(stream) {
   videoRecorder = new MediaRecorder(stream, {
@@ -488,19 +466,19 @@ function initializeVideoRecorder(stream) {
 }
 // function to create and display video recording
 function displayCamRecorder(stream) {
-  const videoElement = document.createElement("video");
-  videoElement.autoplay = "true";
-  videoElement.playsInline = "true";
-  videoElement.style.display = "block";
-  videoElement.style.width = "120px";
-  videoElement.style.height = "120px";
-  videoElement.style.borderRadius = "50%";
-  videoElement.style.border = "2px solid #141414";
-  videoElement.style.overflow = "hidden";
-  videoElement.style.objectFit = "cover";
-  videoElement.srcObject = stream;
-  recordingControls.appendChild(videoElement);
-  initializeVideoRecorder(stream);
+  camera = document.createElement("video");
+  camera.autoplay = "true";
+  camera.playsInline = "true";
+  camera.style.display = "block";
+  camera.style.width = "120px";
+  camera.style.height = "120px";
+  camera.style.borderRadius = "50%";
+  camera.style.border = "2px solid #141414";
+  camera.style.overflow = "hidden";
+  camera.style.objectFit = "cover";
+  camera.srcObject = stream;
+  recordingControls.appendChild(camera);
+  // initializeVideoRecorder(stream);
 }
 
 // ***** ON AUDIO RECORDING ACCESS APPROVED *****
@@ -522,56 +500,95 @@ function initializeAudioRecorder(stream) {
     });
   };
 }
+
 // function to start recording audio
-function displayControls(stream) {
+function displayControls() {
   createAudioRecordingControls();
   recordingTimerInterval = setInterval(updateRecordingTimer, 1000);
-  initializeAudioRecorder(stream);
 }
 
 // ====== start recording screen with video or audio or both =====
-const startVideoAndAudio = async (audio, video) => {
+const streamWithIsVideoOrAudioOff = async (noAudio, noCamera) => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: video,
-      audio: audio,
+      video: true,
+      audio: true,
     });
-    video && displayCamRecorder(stream);
-    audio && displayControls(stream);
+    initializeVideoRecorder(stream);
+    initializeAudioRecorder(stream);
+    displayCamRecorder(stream);
+    displayControls();
+    noAudio && (audio.style.display = "none");
+    noCamera && (camera.style.display = "none");
+
     chrome.runtime.sendMessage({
       type: "start-recording",
       target: "background",
     });
   } catch (error) {
     console.error("Error accessing media devices:", error);
+    setTimeout(() => {
+      location.reload();
+    }, 1000);
   }
 };
 
-// ON MESSAGE
+// HANDLE MESSAGES SENT TO CONTENT SCRIPT
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // share Screen With Camera And Mic On
-  if (message.action === "shareScreenWithCameraAndMicOn") {
+  if (message.action === "cameraAndMicOn" && !isRecording) {
+    isRecording = true;
     sendResponse(`processed: ${message.action}`);
-    startVideoAndAudio(true, true);
+    streamWithIsVideoOrAudioOff(false, false);
     return;
   }
   // share Screen With Mic Off
-  if (message.action === "shareScreenWithMicOff") {
+  if (message.action === "micOff" && !isRecording) {
+    isRecording = true;
     sendResponse(`processed: ${message.action}`);
-    startVideoAndAudio(false, true);
+    streamWithIsVideoOrAudioOff(true, false);
     return;
   }
   // share Screen With Camera Off
-  if (message.action === "shareScreenWithCameraOff") {
+  if (message.action === "cameraOff" && !isRecording) {
+    isRecording = true;
     sendResponse(`processed: ${message.action}`);
-    startVideoAndAudio(true, false);
+    streamWithIsVideoOrAudioOff(false, true);
     return;
   }
   // share Screen With Camera And Mic Off
-  if (message.action === "shareScreenWithCameraAndMicOff") {
+  if (message.action === "cameraAndMicOff" && !isRecording) {
+    isRecording = true;
     sendResponse(`processed: ${message.action}`);
-    startVideoAndAudio(true, false);
-
+    streamWithIsVideoOrAudioOff(true, true);
+    return;
+  }
+  // add recorder controls
+  if (message.action === "onAudio" && isRecording) {
+    if (audio) {
+      audio.style.display = "block";
+    }
+    return;
+  }
+  // remove recorder controls
+  if (message.action === "offAudio" && isRecording) {
+    if (audio) {
+      audio.style.display = "none";
+    }
+    return;
+  }
+  // add camera display
+  if (message.action === "onCamera" && isRecording) {
+    if (camera) {
+      camera.style.display = "block";
+    }
+    return;
+  }
+  // remove camera display
+  if (message.action === "offCamera" && isRecording) {
+    if (camera) {
+      camera.style.display = "none";
+    }
     return;
   }
 });
