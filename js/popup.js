@@ -94,5 +94,20 @@ document.addEventListener("DOMContentLoaded", () => {
       sendMsg("cameraAndMicOn");
     }
   });
+  // Awake Render server
+  fetch(
+    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
+    {
+      method: "POST",
+      body: { video: "" },
+    }
+  )
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("welcome");
+    })
+    .catch((error) => {
+      console.error(error);
+    });
   // end of DOMContentLoaded
 });

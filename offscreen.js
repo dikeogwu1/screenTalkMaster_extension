@@ -74,20 +74,42 @@ async function startRecording(streamId) {
       data = [];
       return;
     }
+
     const blob = new Blob(data, { type: "video/webm" });
-    window.open(URL.createObjectURL(blob), "_blank");
+    // Create FormData
+    const formData = new FormData();
+    formData.append("video", blob, "recorded-video.webm");
+
+    fetch(
+      "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
+      {
+        method: "POST",
+        body: formData,
+      }
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        // Handle the server response as needed
+        alert(`We're redirecting you to the video page`);
+        const jsonString = JSON.stringify(data);
+        window.open(
+          `https://screentalkmaster.netlify.app/ready/${btoa(jsonString)}`
+        );
+        setTimeout(() => {
+          location.reload();
+        }, 3000);
+      })
+      .catch((error) => {
+        console.error("Error uploading video:", error);
+      });
+
     // Clear state ready for next recording
     recorder = undefined;
     data = [];
   };
+
   recorder.start();
 
-  // Record the current state in the URL. This provides a very low-bandwidth
-  // way of communicating with the service worker (the service worker can check
-  // the URL of the document and see the current recording state). We can't
-  // store that directly in the service worker as it may be terminated while
-  // recording is in progress. We could write it to storage but that slightly
-  // increases the risk of things getting out of sync.
   window.location.hash = "recording";
 }
 
@@ -96,20 +118,6 @@ async function stopRecording() {
 
   recorder.stream.getTracks().forEach((t) => t.stop());
 
-  // Update current state in URL
-  window.location.hash = "";
-
-  // Note: In a real extension, you would want to write the recording to a more
-  // permanent location (e.g IndexedDB) and then close the offscreen document,
-  // to avoid keeping a document around unnecessarily. Here we avoid that to
-  // make sure the browser keeps the Object URL we create (see above) and to
-  // keep the sample fairly simple to follow.
-}
-
-async function stopRecording() {
-  recorder.stop();
-
-  recorder.stream.getTracks().forEach((t) => t.stop());
   // Update current state in URL
   window.location.hash = "";
 

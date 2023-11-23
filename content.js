@@ -1,7 +1,6 @@
 let recordingTimerInterval;
 let recordingTime = 0;
 let isRecording = false;
-let destination;
 var videoRecorder = null;
 var audioRecorder = null;
 let camera = null;
@@ -344,8 +343,6 @@ function resumeRecording() {
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and save recording
 function stopRecording() {
   // Define the URL where you want to send the POST request
-  destination =
-    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo";
   audioRecorder && audioRecorder.stop();
   videoRecorder && videoRecorder.stop();
   clearInterval(recordingTimerInterval);
@@ -359,14 +356,10 @@ function stopRecording() {
     type: "stop-recording",
     target: "offscreen",
   });
-  setTimeout(() => {
-    location.reload();
-  }, 3000);
 }
 
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
 function deleteRecording() {
-  destination = "";
   audioRecorder && audioRecorder.stop();
   videoRecorder && videoRecorder.stop();
   clearInterval(recordingTimerInterval);
@@ -383,64 +376,6 @@ function deleteRecording() {
   setTimeout(() => {
     location.reload();
   }, 3000);
-}
-
-function postVideoLinkToServer(url) {
-  function generateMachineId() {
-    const nav = window.navigator;
-    const machineId = [nav.userAgent, nav.language].join("|");
-    // Hash the generated string to get a more compact and consistent identifier
-    const hashedMachineId = hashString(machineId);
-    return hashedMachineId;
-  }
-
-  // Simple hash function for id generating purposes
-  function hashString(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-    }
-    return hash.toString(16);
-  }
-  const machineId = generateMachineId();
-
-  // Open a new tab and navigate to a URL
-  function openNewTab(url) {
-    window.open(url, "_blank");
-  }
-
-  // data to be posted to the server
-  const data = {
-    name: "video link",
-    video: url,
-    ip: machineId,
-  };
-
-  fetch(destination, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      return response.json();
-    })
-    .then((responseData) => {
-      // Handle the response data
-      alert("Your video has been generated successfully");
-      openNewTab("https://screentalkmaster.netlify.app/ready");
-      stopRecording();
-    })
-    .catch((error) => {
-      // Handle any errors that occurred during the fetch
-      alert("Your video was not generated");
-      stopRecording();
-    });
 }
 
 // ***** ON VIDEO RECORDING ACCESS APPROVED *****
@@ -527,9 +462,12 @@ const streamWithIsVideoOrAudioOff = async (noAudio, noCamera) => {
     });
   } catch (error) {
     console.error("Error accessing media devices:", error);
+    alert(
+      `Sorry! we could not record, let's reload the page before you try again`
+    );
     setTimeout(() => {
       location.reload();
-    }, 1000);
+    }, 800);
   }
 };
 
