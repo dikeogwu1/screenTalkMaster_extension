@@ -51,7 +51,6 @@ chrome.runtime.onMessage.addListener(async (message) => {
           currentWindow: true,
         });
         const tab = getTab[0];
-        console.log(tab);
 
         // Get a MediaStream for the active tab.
         const streamId = await chrome.tabCapture.getMediaStreamId({

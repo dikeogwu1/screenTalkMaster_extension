@@ -1,4 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Awake Render server
+  fetch("https://helpmeout-chrome-extension-server.onrender.com/api/v1/videos")
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("welcome");
+    })
+    .catch((error) => {
+      console.error(error);
+    });
+
   // GET THE BUTTONS
   const startVideoButton = document.querySelector(
     "button#start-recording-button"
@@ -94,20 +104,17 @@ document.addEventListener("DOMContentLoaded", () => {
       sendMsg("cameraAndMicOn");
     }
   });
-  // Awake Render server
-  fetch(
-    "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
-    {
-      method: "POST",
-      body: { video: "" },
+
+  chrome.runtime.onMessage.addListener(async (message) => {
+    if (message.target === "popup") {
+      switch (message.type) {
+        case "close-popup":
+          window.close();
+          break;
+        default:
+          throw new Error("Unrecognized message:", message.type);
+      }
     }
-  )
-    .then((response) => response.json())
-    .then((data) => {
-      console.log("welcome");
-    })
-    .catch((error) => {
-      console.error(error);
-    });
+  });
   // end of DOMContentLoaded
 });

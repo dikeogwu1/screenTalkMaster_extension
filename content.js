@@ -5,6 +5,8 @@ var videoRecorder = null;
 var audioRecorder = null;
 let camera = null;
 let audio = null;
+let loadingContainer;
+let isLoading;
 
 const recordingControls = document.createElement("div");
 recordingControls.id = "recording-controls";
@@ -296,6 +298,118 @@ function createAudioRecordingControls() {
   }
 }
 
+function createLoading() {
+  loadingContainer = document.createElement("div");
+  loadingContainer.id = "loadingBox";
+  loadingContainer.innerHTML = `<aside
+    style="
+      display: grid;
+      padding: 0.5rem;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      background: #fff;
+      width: 22rem;
+      height: 20rem;
+      box-shadow: 0px 0px 3px 2px #f10;
+    "
+  >
+    <img
+      src="https://res.cloudinary.com/dikeogwu1/image/upload/v1701431905/HelpMeOut%20Chrome%20Extension/main-icon-xl_ac3gka.png"
+      alt="logo"
+      style="margin: 0 auto"
+    />
+    <h2 style="color: #000; text-align: center">Please wait...</h2>
+    <p style="color: #000">You will be redirected shortly.</p>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 0.81rem;
+        animation: load 1s infinite; 
+      "
+    >
+      <strong
+        style="
+          display: block;
+          width: 3rem;
+          height: 2px;
+          border-radius: 1.0625rem;
+          background: #080;
+        "
+      ></strong>
+      <div
+        style="
+          width: 5rem;
+          height: 2px;
+          border-radius: 1.0625rem;
+          background: #c00404;
+        "
+      ></div>
+      <strong
+        style="
+          display: block;
+          width: 3rem;
+          height: 2px;
+          border-radius: 1.0625rem;
+          background: #c4b454;
+        "
+      ></strong>
+    </div>
+  </aside>`;
+  loadingContainer.style.placeContent = "center";
+  loadingContainer.style.position = "fixed";
+  loadingContainer.style.top = "30%";
+  loadingContainer.style.left = "50%";
+  loadingContainer.style.transform = "translateX(-50%)";
+  loadingContainer.style.width = "fit-content";
+  loadingContainer.style.zIndex = "999999";
+  loadingContainer.style.overflow = "hidden";
+  if (!isLoading) {
+    loadingContainer.style.display = "none";
+  } else {
+    loadingContainer.style.display = "grid";
+  }
+  const styles = document.createElement("style");
+  styles.textContent = `
+    @keyframes load {
+      10% {
+        transform: translateX(0);
+      }
+      20% {
+        transform: translateX(40%);
+      }
+      30% {
+        transform: translateX(60%);
+      }
+      40% {
+        transform: translateX(80%);
+      }
+      50% {
+        transform: translateX(100%);
+      }
+      60% {
+        transform: translateX(0);
+      }
+      70% {
+        transform: translateX(-40%);
+      }
+      80% {
+        transform: translateX(-60%);
+      }
+      90% {
+        transform: translateX(-80%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+  `;
+  document.head.appendChild(styles);
+  document.body.appendChild(loadingContainer);
+}
+createLoading();
+
 // Function to update the recording timer
 function updateRecordingTimer() {
   recordingTime++;
@@ -356,6 +470,16 @@ function stopRecording() {
     type: "stop-recording",
     target: "offscreen",
   });
+
+  isLoading = true;
+  if (!isLoading) {
+    loadingContainer.style.display = "none";
+  } else {
+    loadingContainer.style.display = "grid";
+  }
+  setTimeout(() => {
+    location.reload();
+  }, 20000);
 }
 
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
@@ -377,6 +501,7 @@ function deleteRecording() {
     location.reload();
   }, 3000);
 }
+let data = [];
 
 // ***** ON VIDEO RECORDING ACCESS APPROVED *****
 function initializeVideoRecorder(stream) {
@@ -392,6 +517,7 @@ function initializeVideoRecorder(stream) {
   videoRecorder.onresume = function () {
     videoTrack.enabled = true;
   };
+  videoRecorder.ondataavailable = (event) => data.push(event.data);
 
   videoRecorder.onstop = function () {
     stream.getTracks().forEach(function (track) {
@@ -463,7 +589,7 @@ const streamWithIsVideoOrAudioOff = async (noAudio, noCamera) => {
   } catch (error) {
     console.error("Error accessing media devices:", error);
     alert(
-      `Sorry! we could not record, let's reload the page before you try again`
+      `Sorry! we couldn't record your screen at this time. Let's reload the page before you try again.`
     );
     setTimeout(() => {
       location.reload();
@@ -530,3 +656,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 });
+
+const handleBeforeUnload = (e) => {
+  if (isRecording) {
+    deleteRecording();
+    return;
+  }
+};
+window.addEventListener("beforeunload", handleBeforeUnload);

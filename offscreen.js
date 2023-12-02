@@ -26,6 +26,27 @@ let recorder;
 let deleted;
 let data = [];
 
+const hex = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+];
+function getRandomNumber() {
+  return Math.floor(Math.random() * hex.length);
+}
+
 async function startRecording(streamId) {
   if (recorder?.state === "recording") {
     throw new Error("Called startRecording while recording is in progress.");
@@ -76,32 +97,40 @@ async function startRecording(streamId) {
     }
 
     const blob = new Blob(data, { type: "video/webm" });
+    // generate name
+    let videoName = "st-";
+    for (let i = 0; i < 6; i++) {
+      videoName += hex[getRandomNumber()];
+    }
     // Create FormData
     const formData = new FormData();
-    formData.append("video", blob, "recorded-video.webm");
+    formData.append("video", blob, `${videoName}.webm`);
 
-    fetch(
-      "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
-      {
-        method: "POST",
-        body: formData,
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        // Handle the server response as needed
-        alert(`We're redirecting you to the video page`);
-        const jsonString = JSON.stringify(data);
-        window.open(
-          `https://screentalkmaster.netlify.app/ready/${btoa(jsonString)}`
+    const postToServer = async () => {
+      try {
+        const response = await fetch(
+          "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
+          {
+            method: "POST",
+            body: formData,
+          }
         );
-        setTimeout(() => {
-          location.reload();
-        }, 3000);
-      })
-      .catch((error) => {
+
+        const data = await response.json();
+        if (data.msg) {
+          alert(data.msg);
+        } else {
+          const jsonString = JSON.stringify(data);
+          window.open(
+            `https://screentalkmaster.netlify.app/ready/${btoa(jsonString)}`
+          );
+        }
+      } catch (error) {
+        alert("error uploading");
         console.error("Error uploading video:", error);
-      });
+      }
+    };
+    postToServer();
 
     // Clear state ready for next recording
     recorder = undefined;
@@ -111,6 +140,10 @@ async function startRecording(streamId) {
   recorder.start();
 
   window.location.hash = "recording";
+  chrome.runtime.sendMessage({
+    type: "close-popup",
+    target: "popup",
+  });
 }
 
 async function stopRecording() {
