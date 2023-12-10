@@ -73,4 +73,20 @@ chrome.runtime.onMessage.addListener(async (message) => {
         throw new Error("Unrecognized message:", message.type);
     }
   }
+  if (message.action === "show-please-wait") {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab) {
+        chrome.tabs.sendMessage(activeTab.id, { type: "addLoading" });
+      }
+    });
+  }
+  if (message.action === "hide-please-wait") {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const activeTab = tabs[0];
+      if (activeTab) {
+        chrome.tabs.sendMessage(activeTab.id, { type: "hideLoading" });
+      }
+    });
+  }
 });

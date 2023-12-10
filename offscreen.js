@@ -107,6 +107,8 @@ async function startRecording(streamId) {
     formData.append("video", blob, `${videoName}.webm`);
 
     const postToServer = async () => {
+      chrome.runtime.sendMessage({ action: "show-please-wait" });
+
       try {
         const response = await fetch(
           "https://helpmeout-chrome-extension-server.onrender.com/api/v1/createVideo",
@@ -116,18 +118,24 @@ async function startRecording(streamId) {
           }
         );
 
+        chrome.runtime.sendMessage({ action: "hide-please-wait" });
         const data = await response.json();
-        if (data.msg) {
-          alert(data.msg);
-        } else {
-          const jsonString = JSON.stringify(data);
-          window.open(
-            `https://screentalkmaster.netlify.app/ready/${btoa(jsonString)}`
-          );
-        }
+
+        setTimeout(() => {
+          if (data.msg) {
+            alert(data.msg);
+          } else {
+            const jsonString = JSON.stringify(data);
+            window.open(
+              `https://screentalkmaster.netlify.app/ready/${btoa(jsonString)}`
+            );
+          }
+        }, 1000);
       } catch (error) {
-        alert("error uploading");
-        console.error("Error uploading video:", error);
+        chrome.runtime.sendMessage({ action: "hide-please-wait" });
+        setTimeout(() => {
+          alert("error uploading video");
+        }, 500);
       }
     };
     postToServer();
@@ -153,12 +161,6 @@ async function stopRecording() {
 
   // Update current state in URL
   window.location.hash = "";
-
-  // Note: In a real extension, you would want to write the recording to a more
-  // permanent location (e.g IndexedDB) and then close the offscreen document,
-  // to avoid keeping a document around unnecessarily. Here we avoid that to
-  // make sure the browser keeps the Object URL we create (see above) and to
-  // keep the sample fairly simple to follow.
 }
 
 async function pauseRecording() {

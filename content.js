@@ -462,24 +462,17 @@ function stopRecording() {
   clearInterval(recordingTimerInterval);
   recordingTime = 0;
   // Remove the recording controls from the screen
-  recordingControls.remove();
+  audio && recordingControls.removeChild(audio);
+  camera && recordingControls.removeChild(camera);
   videoRecorder = null;
   audioRecorder = null;
   isRecording = false;
-  chrome.runtime.sendMessage({
-    type: "stop-recording",
-    target: "offscreen",
-  });
-
-  isLoading = true;
-  if (!isLoading) {
-    loadingContainer.style.display = "none";
-  } else {
-    loadingContainer.style.display = "grid";
-  }
   setTimeout(() => {
-    location.reload();
-  }, 20000);
+    chrome.runtime.sendMessage({
+      type: "stop-recording",
+      target: "offscreen",
+    });
+  }, 100);
 }
 
 // Function to off camera, off mic, stop screen sharing, clear interval, remove recording controls and delete recording
@@ -489,7 +482,8 @@ function deleteRecording() {
   clearInterval(recordingTimerInterval);
   recordingTime = 0;
   // Remove the recording controls from the screen
-  recordingControls.remove();
+  audio && recordingControls.removeChild(audio);
+  camera && recordingControls.removeChild(camera);
   videoRecorder = null;
   audioRecorder = null;
   isRecording = false;
@@ -497,9 +491,6 @@ function deleteRecording() {
     type: "delete-recording",
     target: "offscreen",
   });
-  setTimeout(() => {
-    location.reload();
-  }, 3000);
 }
 let data = [];
 
@@ -587,18 +578,14 @@ const streamWithIsVideoOrAudioOff = async (noAudio, noCamera) => {
       target: "background",
     });
   } catch (error) {
-    console.error("Error accessing media devices:", error);
     alert(
-      `Sorry! we couldn't record your screen at this time. Let's reload the page before you try again.`
+      `Apologies, but we were unable to record your screen at this time. Please attempt to initiate the recording again or reload the page if the error persists.`
     );
-    setTimeout(() => {
-      location.reload();
-    }, 800);
   }
 };
 
 // HANDLE MESSAGES SENT TO CONTENT SCRIPT
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   // share Screen With Camera And Mic On
   if (message.action === "cameraAndMicOn" && !isRecording) {
     isRecording = true;
@@ -629,31 +616,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   // add recorder controls
   if (message.action === "onAudio" && isRecording) {
-    if (audio) {
-      audio.style.display = "block";
-    }
+    if (audio) audio.style.display = "block";
     return;
   }
   // remove recorder controls
   if (message.action === "offAudio" && isRecording) {
-    if (audio) {
-      audio.style.display = "none";
-    }
+    if (audio) audio.style.display = "none";
     return;
   }
   // add camera display
   if (message.action === "onCamera" && isRecording) {
-    if (camera) {
-      camera.style.display = "block";
-    }
+    if (camera) camera.style.display = "block";
     return;
   }
   // remove camera display
   if (message.action === "offCamera" && isRecording) {
-    if (camera) {
-      camera.style.display = "none";
-    }
+    if (camera) camera.style.display = "none";
     return;
+  }
+
+  if (message.type === "addLoading") {
+    isLoading = true;
+    if (isLoading) loadingContainer.style.display = "grid";
+  }
+  if (message.type === "hideLoading") {
+    isLoading = false;
+    if (!isLoading) loadingContainer.style.display = "none";
   }
 });
 
